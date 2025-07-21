@@ -1,0 +1,33 @@
+# IDE 和操作系统文件
+*.iml
+.idea/
+.DS_Store
+
+# 本地配置文件 (包含SDK路径等敏感信息)
+local.properties
+
+# Gradle 构建工具生成的文件
+.gradle/
+build/
+captures/
+
+# 编译产物
+*.apk
+*.aab
+*.ap_
+*.dex
+classes.dex
+
+# 日志文件
+*.log
+
+# Keystore 文件 (包含App签名，非常重要，绝不能上传)
+*.jks
+*.keystore
+
+# Google Services (例如 Firebase 配置)
+google-services.json
+
+# C++ 构建相关
+.cxx/
+.externalNativeBuild/

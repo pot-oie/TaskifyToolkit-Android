@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/button_request_accessibility"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="1. 开启无障碍服务" />
+
+    <Button
+        android:id="@+id/button_request_screenshot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="2. 请求截图权限" />
+
+    <EditText
+        android:id="@+id/edit_text_target"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:hint="输入目标按钮的文字"
+        android:text="我是被点击的目标" />
+
+    <Button
+        android:id="@+id/button_test_click"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="3. 测试点击功能" />
+
+    <Button
+        android:id="@+id/button_take_screenshot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="3. 执行单次截图" />
+
+
+    <Button
+        android:id="@+id/button_target"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:backgroundTint="#FFC107"
+        android:text="我是被点击的目标" />
+
+</LinearLayout>
