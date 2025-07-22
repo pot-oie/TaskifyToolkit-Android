@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">TaskifyApp</string>
+    <string name="app_name">TaskifyToolkit</string>
     <string name="accessibility_service_description">Taskify需要此权限以实现应用自动化操作</string>
 </resources>
