@@ -112,11 +112,18 @@
                 android:text="测试点击功能" />
 
             <Button
-                android:id="@+id/button_take_screenshot"
+                android:id="@+id/button_capture_and_save_locally"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="执行单次截图" />
+                android:text="截图并保存本地" />
+
+            <Button
+                android:id="@+id/button_capture_and_upload"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="采集并上报 (API)" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -161,17 +168,5 @@
                 android:text="启动服务器" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-
-    <!-- 只是一个视觉上的目标，方便测试点击 -->
-    <Button
-        android:id="@+id/button_target"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:backgroundTint="#FFC107"
-        android:text="我是被点击的目标"
-        app:layout_constraintTop_toBottomOf="@id/card_server"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

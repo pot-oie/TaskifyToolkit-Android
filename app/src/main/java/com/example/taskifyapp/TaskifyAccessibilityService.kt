@@ -3,12 +3,21 @@ package com.example.taskifyapp
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.annotation.RequiresApi
+import java.io.StringWriter
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.OutputKeys
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
+import org.w3c.dom.Document
+import org.w3c.dom.Element
 
 class TaskifyAccessibilityService : AccessibilityService() {
     companion object {
@@ -20,6 +29,81 @@ class TaskifyAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         instance = this
         Log.d(TAG, "无障碍服务已连接！")
+    }
+
+    /**
+     * [功能] 获取当前活动窗口的 UI 布局，并将其序列化为 XML 字符串。
+     * @return 返回包含 UI 布局的 XML 字符串，如果失败则返回 null。
+     */
+    fun getLayoutXml(): String? {
+        val rootNode = getRootInActiveWindow() ?: return null
+        try {
+            val docFactory = DocumentBuilderFactory.newInstance()
+            val docBuilder = docFactory.newDocumentBuilder()
+            val doc = docBuilder.newDocument()
+
+            val rootElement = doc.createElement("hierarchy")
+            doc.appendChild(rootElement)
+
+            // 开始递归构建 XML 树
+            dumpNodeToXml(rootNode, doc, rootElement)
+
+            // 将 Document 对象转换为格式化的 XML 字符串
+            val transformerFactory = TransformerFactory.newInstance()
+            val transformer = transformerFactory.newTransformer()
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes")
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2")
+
+            val writer = StringWriter()
+            transformer.transform(DOMSource(doc), StreamResult(writer))
+
+            return writer.buffer.toString()
+        } catch (e: Exception) {
+            Log.e(TAG, "生成 UI XML 时出错", e)
+            return null
+        } finally {
+            rootNode.recycle()
+        }
+    }
+
+    /**
+     * 递归辅助函数，将 AccessibilityNodeInfo 转换为 XML 元素。
+     */
+    private fun dumpNodeToXml(node: AccessibilityNodeInfo?, doc: Document, parentElement: Element) {
+        if (node == null) return
+
+        val element = doc.createElement(node.className?.toString() ?: "node")
+        // 添加节点的各种属性
+        element.setAttribute("index", node.childCount.toString())
+        element.setAttribute("text", node.text?.toString() ?: "")
+        element.setAttribute("resource-id", node.viewIdResourceName ?: "")
+        element.setAttribute("class", node.className?.toString() ?: "")
+        element.setAttribute("package", node.packageName?.toString() ?: "")
+        element.setAttribute("content-desc", node.contentDescription?.toString() ?: "")
+        element.setAttribute("checkable", node.isCheckable.toString())
+        element.setAttribute("checked", node.isChecked.toString())
+        element.setAttribute("clickable", node.isClickable.toString())
+        element.setAttribute("editable", node.isEditable.toString())
+        element.setAttribute("enabled", node.isEnabled.toString())
+        element.setAttribute("focusable", node.isFocusable.toString())
+        element.setAttribute("focused", node.isFocused.toString())
+        element.setAttribute("scrollable", node.isScrollable.toString())
+        element.setAttribute("long-clickable", node.isLongClickable.toString())
+        element.setAttribute("password", node.isPassword.toString())
+        element.setAttribute("selected", node.isSelected.toString())
+
+        val bounds = Rect()
+        node.getBoundsInScreen(bounds)
+        element.setAttribute("bounds", bounds.toShortString())
+
+        parentElement.appendChild(element)
+
+        // 递归处理所有子节点
+        for (i in 0 until node.childCount) {
+            val childNode = node.getChild(i)
+            dumpNodeToXml(childNode, doc, element)
+            childNode?.recycle() // 回收子节点
+        }
     }
 
     /**
