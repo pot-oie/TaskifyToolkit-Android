@@ -1,14 +1,10 @@
 # TaskifyToolkit (安卓工具箱)
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-
 Taskify 项目的Toolkit，利用安卓系统的无障碍服务 (Accessibility Service) 和 MediaProjection API，作为一个运行在设备端的智能代理，实现对手机UI界面的感知与自动化操作。
 
 ## 项目架构
 
 **TaskifyToolkit** 是一个安卓端的内部工具，旨在实现远程的 UI 控制和屏幕捕获功能。
-
-**当前状态：** 开发版本。主要目的是在安卓模拟器上测试核心权限的设置流程，以及各项基础功能的手动操作。
 
 * **TaskifyToolkit (本项目)**: 作为运行在手机上的“眼睛”和“手”。
     * **眼睛 (感知)**: 使用 `ScreenshotService` 配合 `MediaProjection` API 捕捉屏幕画面。
@@ -17,12 +13,12 @@ Taskify 项目的Toolkit，利用安卓系统的无障碍服务 (Accessibility S
 
 ## 核心功能
 
-目前测试版本已实现以下核心功能：
+目前版本已实现以下核心功能：
 
 * **无障碍服务**: 能够稳定运行，并提供了 `clickByText` 等基础API用于模拟用户点击。
 * **屏幕捕捉服务**: 采用独立的前台服务 (`ScreenshotService`) 实现，能够在用户授权后，启动一个持久化的录屏会话，并按需（通过 `Intent` 命令）捕获当前屏幕的截图。
 * **权限管理**: 包含清晰的用户引导流程，用于请求和开启无障碍服务及屏幕捕捉权限。
-* **测试面板**: 主界面 (`MainActivity`) 目前作为一个功能完备的测试面板，可以独立验证各项服务的开启和功能调用（http连接还未实现）。
+* **Websocket**: 完整实现与后端的通信。
 
 ## 技术栈
 
@@ -33,52 +29,70 @@ Taskify 项目的Toolkit，利用安卓系统的无障碍服务 (Accessibility S
     * `ForegroundService`: 保证截图服务在后台稳定运行。
 * **构建系统**: Gradle
 
-## 如何开始
-
-#### **环境要求**
+## 环境要求
 
 * **Android Studio 版本：** 2025.1.1（本人使用）
 * **最低 SDK (`minSdk`)：** 24 (Android 7.0)
 * **目标 SDK (`targetSdk`)：** 36
 * **主要测试环境：** 安卓模拟器 - Pixel 7 (API 36)
 
-#### **运行步骤**
+## 测试步骤
 
-1.  克隆本仓库到本地：
-    ```bash
-    git clone https://github.com/pot-oie/Taskify-Android.git
+### 1. 环境准备
+
+- **网络环境**: 您的电脑（运行后端服务）和安卓测试设备必须连接到 **同一个局域网 (Wi-Fi)** 下。
+
+### 2. 关键配置
+
+在运行App前，**必须**配置正确的后端WebSocket地址，否则App将无法连接到后端服务。
+
+1.  在 Android Studio 中，找到并打开以下文件：
+    `app/src/main/java/com/example/taskifyapp/WebSocketService.kt`
+
+2.  修改文件顶部的 `WEBSOCKET_URL` 常量，将其中的IP地址替换为您**正在运行后端服务的电脑的局域网IP地址**。
+
+    ```kotlin
+    // ...
+    class WebSocketService : Service() {
+    
+        private val TAG = "WebSocketService"
+        // !!!重要!!! 请将这里替换为您的后端服务器地址
+        private val WEBSOCKET_URL = "ws://<你的电脑IP地址>:8080/agent-ws"
+    
+        // ...
+    }
     ```
-2.  使用 Android Studio 打开项目。
-3.  等待 Gradle 完成项目同步和依赖下载。
-4.  点击工具栏的 **'Run app' (▶️)** 按钮，将应用安装到你的虚拟机或物理设备上。
 
-## 如何测试
+    * **如何查找电脑IP地址？**
+        * **Windows**: 打开CMD（命令提示符），输入 `ipconfig`，查找“无线局域网适配器”下的“IPv4 地址”。
+        * **macOS**: 打开“系统设置” -> “网络” -> “Wi-Fi”，可以看到IP地址；或在终端输入 `ifconfig | grep "inet "`。
 
-应用启动后，你将看到一个测试面板，请按照以下顺序进行测试：
+### 3. 构建与运行
 
-1. 点击 **“1. 开启无障碍服务”** ，在系统设置页面中找到 `TaskifyToolkit` 并开启权限。
+1.  使用 Android Studio 打开本安卓项目。
+2.  等待 Gradle 完成项目同步和构建（通常会自动进行）。
+3.  连接您的安卓设备或启动安卓模拟器。
+4.  点击菜单栏的 **"Run" -> "Run 'app'"** (或使用快捷键 `Shift+F10`) 来安装并运行App。
 
-2. 返回 App，点击 **“2. 启动截图服务”** ，在弹出的系统对话框中完成授权（选择 `Share entire screen` ）。成功后，手机顶部状态栏会出现一个常驻通知。
+### 4. 使用与测试流程
 
-3. 在输入框中确认文本后，点击 **“3. 测试点击功能”** ，观察对应的目标按钮是否被成功点击。
+为了让安卓端进入“待命”状态以配合后端测试，请在App内完成以下初始化步骤：
 
-4. 点击 **“4. 执行单次截图”** ，App 会进行一次截图并保存。请通过 Logcat 或手机文件管理器检查截图是否成功。
+1.  **开启无障碍服务**:
+    App启动后会显示主界面。请首先点击 **【1. 开启无障碍服务】** 按钮，系统会跳转到设置页面。在列表中找到“Taskify 自动化服务”并开启它。
 
-   `/storage/emulated/0/Android/data/com.example.taskifyapp/files/Pictures/screenshot.png`
+2.  **启动后台服务并授权**:
+    返回App后，点击 **【2. 启动后台服务并授权】** 按钮。系统会弹出“屏幕录制”的授权请求，请点击“立即开始”或“同意”。
 
-## 贡献代码
+3.  **验证服务状态**:
+    授权成功后，App会自动在后台以“前台服务”的形式运行。您可以在手机顶部的通知栏看到一个“TaskifyToolkit 后台服务”的常驻通知，这表示安卓端已准备就绪，正在等待后端的指令。
 
-欢迎为本项目贡献代码！请遵循以下工作流程：
-
-1.  禁止直接向 `main` 分支提交代码。
-2.  从 `main` 分支创建你自己的特性分支 (`feature/your-feature-name`)。
-3.  完成开发后，向上游仓库的 `main` 分支提交 **Pull Request (PR)**。
-4.  PR 经过审查 (Review) 后，将以 **Squash and merge** 的方式合并。
+4.  **配合后端测试**:
+    此时，安卓端已进入待命状态。后端开发同学可以通过调用 `POST /api/v1/agent/start` 接口来触发任务。您可以在 Android Studio 的 **Logcat** 窗口中，筛选 `WebSocketService` 来观察安卓端接收和执行指令的日志。
 
 ## 未来工作
 
-* [ ] 实现与 `Taskify` 后端项目的网络通信（使用 Retrofit or NanoHTTPD）。**Important**
-* [ ] 将测试按钮的触发逻辑，替换为接收和解析来自后端的指令。
+* [ ] 与后端同学配合，接收和解析来自后端的指令。
 * [ ] 开发更丰富的UI元素定位和操作序列功能。
 * [ ] 完善服务的稳定性和错误处理机制。
-* [ ] 当 HTTP 服务器功能在模拟器上稳定后，将测试范围扩大到物理安卓设备。
+* [ ] 将测试范围扩大到物理安卓设备。

@@ -49,14 +49,10 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
-    // 内置 HTTP 服务器（用于接收指令）
-    implementation("org.nanohttpd:nanohttpd:2.3.1")
-    // Retrofit 用于网络请求 (用于上报结果)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    // Gson 转换器，用于将对象序列化为 JSON
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    // OkHttp 日志拦截器，方便在 Logcat 中查看网络请求的详细信息
-    implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
+
+    // OkHttp 用于 WebSocket 通信
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
     // 测试依赖
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
