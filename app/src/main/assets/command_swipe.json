@@ -1,0 +1,8 @@
+{
+  "actionType": "SWIPE",
+  "startX": 540,
+  "startY": 1800,
+  "endX": 540,
+  "endY": 600,
+  "duration": 400
+}

@@ -131,6 +131,77 @@ class TaskifyAccessibilityService : AccessibilityService() {
     }
 
     /**
+     * [功能] 根据文本找到节点并输入内容
+     */
+    fun inputTextByText(findText: String, contentToInput: String): Boolean {
+        val rootNode = rootInActiveWindow ?: return false
+        val nodes = rootNode.findAccessibilityNodeInfosByText(findText)
+        rootNode.recycle()
+
+        // 找到第一个可编辑的节点
+        nodes?.firstOrNull { it.isEditable }?.let { node ->
+            Log.d(TAG, "通过文本找到并输入内容: $findText -> $contentToInput")
+            val result = inputText(node, contentToInput) // inputText 是您已有的方法
+            node.recycle()
+            nodes.forEach { it.recycle() } // 回收所有找到的节点
+            return result
+        }
+        Log.w(TAG, "未找到可输入的节点: $findText")
+        nodes?.forEach { it.recycle() }
+        return false
+    }
+
+    /**
+     * [功能] 根据文本找到节点并执行长按
+     */
+    fun longClickByText(text: String): Boolean {
+        val rootNode = rootInActiveWindow ?: return false
+        val nodes = rootNode.findAccessibilityNodeInfosByText(text)
+        rootNode.recycle()
+
+        // 找到第一个可长按的节点
+        nodes?.firstOrNull { it.isLongClickable }?.let { node ->
+            Log.d(TAG, "通过文本找到并长按节点: $text")
+            val result = node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
+            node.recycle()
+            nodes.forEach { it.recycle() }
+            return result
+        }
+        Log.w(TAG, "未找到可长按的文本节点: $text")
+        nodes?.forEach { it.recycle() }
+        return false
+    }
+
+    /**
+     * [功能] 根据文本找到节点并执行滚动
+     * @param text 要查找的可滚动节点的文本
+     * @param direction 滚动方向, 1 为向前(下/右), -1 为向后(上/左)
+     */
+    fun scrollByText(text: String, direction: Int): Boolean {
+        val rootNode = rootInActiveWindow ?: return false
+        val nodes = rootNode.findAccessibilityNodeInfosByText(text)
+        rootNode.recycle()
+
+        val action = if (direction > 0) {
+            AccessibilityNodeInfo.ACTION_SCROLL_FORWARD
+        } else {
+            AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
+        }
+
+        // 找到第一个可滚动的节点
+        nodes?.firstOrNull { it.isScrollable }?.let { node ->
+            Log.d(TAG, "通过文本找到并滚动节点: $text, direction: $direction")
+            val result = node.performAction(action)
+            node.recycle()
+            nodes.forEach { it.recycle() }
+            return result
+        }
+        Log.w(TAG, "未找到可滚动的节点: $text")
+        nodes?.forEach { it.recycle() }
+        return false
+    }
+
+    /**
      * [功能] 在指定的输入框节点中输入文本
      */
     fun inputText(node: AccessibilityNodeInfo, text: String): Boolean {

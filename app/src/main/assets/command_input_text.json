@@ -1,0 +1,5 @@
+{
+  "actionType": "INPUT_TEXT",
+  "targetText": "请输入用户名",
+  "textToInput": "my_username"
+}

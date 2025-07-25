@@ -23,6 +23,7 @@ import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import okhttp3.*
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -31,9 +32,11 @@ import java.util.concurrent.TimeUnit
 class WebSocketService : Service() {
 
     private val TAG = "WebSocketService"
+    private val UI_DEBUG_TAG = "UI_DEBUG"
 
     // !!!重要!!! 请将这里替换为您的后端服务器地址（这是我的）
-    private val WEBSOCKET_URL = "ws://192.168.3.15:8080/agent-ws"
+    private var webSocketUrl = "ws://192.168.3.15:8080/agent-ws"
+    private var shouldAutoReconnect = true
 
     private lateinit var okHttpClient: OkHttpClient
     private var webSocket: WebSocket? = null
@@ -51,11 +54,66 @@ class WebSocketService : Service() {
     @Volatile
     private var isWebSocketConnected = false
 
+    // --- 重连机制相关变量 ---
+    private val RECONNECT_INTERVAL = 5000L // 重连间隔，5000毫秒 = 5秒
+    private val reconnectRunnable = Runnable {
+        Log.d(TAG, "正在尝试重新连接...")
+        sendStatusBroadcast("尝试重连中...", STATE_ERROR) // 通知UI
+        startWebSocket()
+    }
+
     companion object {
+        // --- 状态常量 ---
+        const val STATE_ON = "STATE_ON"         // 成功连接
+        const val STATE_OFF = "STATE_OFF"       // 中性关闭/未启动
+        const val STATE_ERROR = "STATE_ERROR"   // 错误或重连中
+
         const val ACTION_START = "ACTION_START"
         const val EXTRA_RESULT_DATA = "EXTRA_RESULT_DATA"
         private const val NOTIFICATION_ID = 1
         private const val NOTIFICATION_CHANNEL_ID = "WebSocketChannel"
+
+        // --- 用于广播的常量 ---
+        const val ACTION_STATUS_UPDATE = "com.example.taskifyapp.ACTION_STATUS_UPDATE"
+        const val EXTRA_STATUS_TEXT = "EXTRA_STATUS_TEXT"
+        const val EXTRA_STATUS_STATE = "EXTRA_STATUS_STATE"
+
+        @Volatile
+        private var currentStatusText: String = "未启动"
+        @Volatile
+        private var currentState: String = STATE_OFF
+
+        /**
+         * [功能] 允许外部查询当前服务的实时状态（文本和状态类型）
+         */
+        fun getCurrentStatus(): Pair<String, String> {
+            return currentStatusText to currentState
+        }
+
+        // --- 日志广播相关的常量 ---
+        const val ACTION_LOG_UPDATE = "com.example.taskifyapp.ACTION_LOG_UPDATE"
+        const val EXTRA_LOG_MESSAGE = "EXTRA_LOG_MESSAGE"
+    }
+
+    // --- 专门发送日志的函数 ---
+    private fun sendLog(logText: String) {
+        val intent = Intent(ACTION_LOG_UPDATE).apply {
+            putExtra(EXTRA_LOG_MESSAGE, logText)
+        }
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+    }
+
+    // --- 发送广播的辅助函数 ---
+    private fun sendStatusBroadcast(text: String, state: String) {
+        Log.d(UI_DEBUG_TAG, "[SERVICE] 准备更新并发送 LocalBroadcast, status: $text, state: $state")
+        currentStatusText = text
+        currentState = state
+
+        val intent = Intent(ACTION_STATUS_UPDATE).apply {
+            putExtra(EXTRA_STATUS_TEXT, text)
+            putExtra(EXTRA_STATUS_STATE, state)
+        }
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     // 监听用户手动停止屏幕共享的回调
@@ -72,11 +130,20 @@ class WebSocketService : Service() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             isWebSocketConnected = true
             Log.i(TAG, "WebSocket 连接已建立!")
+            mainHandler.removeCallbacks(reconnectRunnable)
+            mainHandler.post{
+                sendLog("[SUCCESS] WebSocket 连接已建立!")
+                updateNotification("已连接到服务器，等待指令...")
+                sendStatusBroadcast("已连接", STATE_ON)
+            }
+            // --- 连接成功后，移除所有待处理的重连任务 ---
+            mainHandler.removeCallbacks(reconnectRunnable)
             mainHandler.post { updateNotification("已连接到服务器，等待指令...") }
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             Log.i(TAG, "从服务器收到指令: $text")
+            sendLog("[RECEIVE] 收到指令: $text")
             handleCommand(text)
         }
 
@@ -87,14 +154,29 @@ class WebSocketService : Service() {
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
             isWebSocketConnected = false
             Log.i(TAG, "WebSocket 连接已关闭: $reason")
-            mainHandler.post { updateNotification("与服务器断开连接，尝试重连...") }
-            // 可以在这里添加重连逻辑
+            mainHandler.post {
+                sendLog("[CLOSED] WebSocket 连接已关闭: $reason")
+                updateNotification("与服务器断开连接，尝试重连...")
+                sendStatusBroadcast("连接已关闭", STATE_OFF)
+            }
+            // --- 根据配置决定是否重连 ---
+            if (shouldAutoReconnect) {
+                mainHandler.postDelayed(reconnectRunnable, RECONNECT_INTERVAL)
+            }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             isWebSocketConnected = false
             Log.e(TAG, "WebSocket 连接失败", t)
-            mainHandler.post { updateNotification("连接失败，请检查网络或服务器") }
+            mainHandler.post {
+                sendLog("[FAIL] WebSocket 连接失败")
+                updateNotification("连接失败，请检查网络或服务器")
+                sendStatusBroadcast("连接失败", STATE_ERROR)
+            }
+            // --- 根据配置决定是否重连 ---
+            if (shouldAutoReconnect) {
+                mainHandler.postDelayed(reconnectRunnable, RECONNECT_INTERVAL)
+            }
         }
     }
 
@@ -102,6 +184,14 @@ class WebSocketService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        sendLog("[INFO] 服务正在创建...")
+        // --- 在服务创建时，从 SharedPreferences 加载配置 ---
+        val prefs = getSharedPreferences("TaskifySettings", Context.MODE_PRIVATE)
+        val savedUrl = prefs.getString("server_url", "")
+        if (!savedUrl.isNullOrEmpty()) {
+            webSocketUrl = savedUrl
+        }
+        shouldAutoReconnect = prefs.getBoolean("auto_reconnect", true)
         // 初始化 OkHttpClient 和 MediaProjectionManager
         okHttpClient = OkHttpClient.Builder()
             .pingInterval(30, TimeUnit.SECONDS) // 保持长连接
@@ -112,6 +202,8 @@ class WebSocketService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // 必须先将服务设置为前台服务
         startForegroundWithNotification("服务正在初始化...")
+        // 发送广播
+        sendStatusBroadcast("正在初始化...", STATE_OFF)
 
         if (intent?.action == ACTION_START) {
             val projectionData: Intent? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -138,6 +230,8 @@ class WebSocketService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        // 发送广播
+        sendStatusBroadcast("服务已停止", STATE_OFF)
         // 在服务销毁时，调用统一的清理方法
         stopAndCleanup()
     }
@@ -177,29 +271,89 @@ class WebSocketService : Service() {
     private fun startWebSocket() {
         if (isWebSocketConnected) return
         Log.d(TAG, "正在连接 WebSocket...")
-        val request = Request.Builder().url(WEBSOCKET_URL).build()
+        // --- 在尝试连接前，先清除旧的重连任务，避免重复执行 ---
+        mainHandler.removeCallbacks(reconnectRunnable)
+        // --- 使用从配置加载的URL ---
+        val request = Request.Builder().url(webSocketUrl).build()
         webSocket = okHttpClient.newWebSocket(request, AgentWebSocketListener())
     }
 
     private fun handleCommand(commandJson: String) {
         try {
             val json = JSONObject(commandJson)
-            when (json.getString("actionType")) {
+            val actionType = json.getString("actionType")
+            val accessibilityService = TaskifyAccessibilityService.instance
+            if (accessibilityService == null) {
+                val errorMsg = "[ERROR] 处理指令 '$actionType' 失败: 无障碍服务未连接"
+                Log.e(TAG, errorMsg)
+                sendLog(errorMsg)
+                reportError("无障碍服务未连接")
+                return
+            }
+
+            var result = false
+            when (actionType) {
                 "CAPTURE_AND_REPORT" -> {
-                    mainHandler.post { Toast.makeText(applicationContext, "收到指令: 采集并上报", Toast.LENGTH_SHORT).show() }
+                    sendLog("[EXEC] 执行指令: 采集并上报")
                     captureAndReportState()
+                    return // 此操作为异步，直接返回
                 }
                 "CLICK" -> {
                     val targetText = json.getString("targetText")
-                    mainHandler.post { Toast.makeText(applicationContext, "收到指令: 点击 '$targetText'", Toast.LENGTH_SHORT).show() }
-                    TaskifyAccessibilityService.instance?.clickByText(targetText)
+                    sendLog("[EXEC] 执行指令: 点击 '$targetText'")
+                    result = accessibilityService.clickByText(targetText)
+                }
+                "INPUT_TEXT" -> {
+                    val targetText = json.getString("targetText")
+                    val textToInput = json.getString("textToInput")
+                    sendLog("[EXEC] 执行指令: 在 '$targetText' 中输入文本")
+                    result = accessibilityService.inputTextByText(targetText, textToInput)
+                }
+                "LONG_CLICK" -> {
+                    val targetText = json.getString("targetText")
+                    sendLog("[EXEC] 执行指令: 长按 '$targetText'")
+                    result = accessibilityService.longClickByText(targetText)
+                }
+                "SWIPE" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        val startX = json.getDouble("startX").toFloat()
+                        val startY = json.getDouble("startY").toFloat()
+                        val endX = json.getDouble("endX").toFloat()
+                        val endY = json.getDouble("endY").toFloat()
+                        val duration = json.optLong("duration", 400)
+                        sendLog("[EXEC] 执行指令: 滑动操作")
+                        accessibilityService.performSwipe(startX, startY, endX, endY, duration)
+                        result = true // 滑动操作没有直接的布尔返回值，我们假定它成功
+                    } else {
+                        sendLog("[ERROR] 滑动操作需要 Android 7.0 (API 24) 或更高版本")
+                        result = false
+                    }
+                }
+                "SCROLL" -> {
+                    val targetText = json.getString("targetText")
+                    val directionStr = json.getString("direction")
+                    val direction = if (directionStr.equals("FORWARD", ignoreCase = true)) 1 else -1
+                    sendLog("[EXEC] 执行指令: 滚动 '$targetText' (方向: $directionStr)")
+                    result = accessibilityService.scrollByText(targetText, direction)
                 }
                 "FINISH_TASK" -> {
-                    mainHandler.post { Toast.makeText(applicationContext, "任务完成！", Toast.LENGTH_LONG).show() }
+                    val message = "任务完成！"
+                    sendLog("[INFO] $message")
+                    mainHandler.post { Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show() }
+                    return
                 }
             }
+            // 统一发送执行结果日志
+            if (result) {
+                sendLog("[SUCCESS] 指令 '$actionType' 执行成功")
+            } else {
+                sendLog("[FAIL] 指令 '$actionType' 执行失败或未找到目标")
+            }
+
         } catch (e: Exception) {
-            Log.e(TAG, "处理指令失败", e)
+            val errorMsg = "[ERROR] 处理指令失败: ${e.message}"
+            Log.e(TAG, errorMsg, e)
+            sendLog(errorMsg)
         }
     }
 
@@ -295,6 +449,9 @@ class WebSocketService : Service() {
      */
     private fun stopAndCleanup() {
         Log.d(TAG, "正在停止服务并清理所有资源...")
+        // --- 在服务清理时，确保移除所有待处理的重连任务 ---
+        mainHandler.removeCallbacks(reconnectRunnable)
+
         isCaptureSessionActive = false
         isWebSocketConnected = false
 

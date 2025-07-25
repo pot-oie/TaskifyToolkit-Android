@@ -57,4 +57,11 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+    // 用于标签页布局
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
+
+    // App 内部广播通信
+    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
 }

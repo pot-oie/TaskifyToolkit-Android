@@ -1,98 +1,178 @@
-# TaskifyToolkit (安卓工具箱)
+# TaskifyToolkit (安卓智能代理)
 
-Taskify 项目的Toolkit，利用安卓系统的无障碍服务 (Accessibility Service) 和 MediaProjection API，作为一个运行在设备端的智能代理，实现对手机UI界面的感知与自动化操作。
+**TaskifyToolkit** 是一个功能完备的安卓设备端智能代理，它利用安卓系统的 **无障碍服务 (Accessibility Service)** 和 **MediaProjection API**，实现对手机UI界面的深度感知与精准的远程自动化操作。
+
+<img src="D:\code\Github\TaskifyToolkit\pic\image-1.png" alt="image-20250725161724698" style="zoom: 24%;" /><img src="D:\code\Github\TaskifyToolkit\pic\image-2.png" alt="image-20250725161940432" style="zoom:24%;" /><img src="D:\code\Github\TaskifyToolkit\pic\image-3.png" alt="image-20250725162036325" style="zoom:24%;" />
+
+
+
+## 项目简介
+
+作为大型自动化项目 **Taskify** 的核心执行端，**TaskifyToolkit** 旨在将一台安卓设备转变为一个能够被远程“大脑”（如云端大语言模型）驱动的智能机器人。它负责执行“大脑”下发的指令，并将设备屏幕上的视觉信息回传，形成一个完整的“感知-决策-执行”自动化闭环。
+
+
 
 ## 项目架构
 
-**TaskifyToolkit** 是一个安卓端的内部工具，旨在实现远程的 UI 控制和屏幕捕获功能。
+- **TaskifyToolkit (本项目)**: 作为运行在手机上的“眼睛”和“手”。
+  - **眼睛 (感知)**: 使用 `MediaProjection` API 实时捕捉屏幕画面，并结合无障碍服务深度解析UI布局的XML结构。
+  - **手 (行动)**: 使用 `TaskifyAccessibilityService` 精准模拟用户的点击、长按、滑动、输入文本、滚动等各类操作。
+- **Taskify (后端项目)**: 作为“大脑”，运行在云端。负责接收客户端发来的屏幕信息，通过AI模型进行分析和决策，并向客户端下发原子或组合操作指令。
 
-* **TaskifyToolkit (本项目)**: 作为运行在手机上的“眼睛”和“手”。
-    * **眼睛 (感知)**: 使用 `ScreenshotService` 配合 `MediaProjection` API 捕捉屏幕画面。
-    * **手 (行动)**: 使用 `TaskifyAccessibilityService` 模拟用户的点击、滑动、输入等操作。
-* **Taskify (后端项目)**: 作为“大脑”，运行在云端。负责接收客户端发来的屏幕信息，通过大语言模型进行分析和决策，并向客户端下发操作指令。
+
 
 ## 核心功能
 
-目前版本已实现以下核心功能：
+当前版本已实现以下核心功能：
 
-* **无障碍服务**: 能够稳定运行，并提供了 `clickByText` 等基础API用于模拟用户点击。
-* **屏幕捕捉服务**: 采用独立的前台服务 (`ScreenshotService`) 实现，能够在用户授权后，启动一个持久化的录屏会话，并按需（通过 `Intent` 命令）捕获当前屏幕的截图。
-* **权限管理**: 包含清晰的用户引导流程，用于请求和开启无障碍服务及屏幕捕捉权限。
-* **Websocket**: 完整实现与后端的通信。
+- **多样的UI自动化**: 封装了对UI元素的 **点击、长按、输入文本、滑动、滚动** 等多种原子操作。
+- **屏幕与布局捕获**: 能够按指令捕获当前屏幕截图及UI布局XML，并上报至后端。
+- **实时双向通信**: 基于 WebSocket 实现与后端的稳定长连接，支持指令的实时下发和结果上报。
+- **动态配置与管理**:
+  - 支持在App内通过UI动态修改后端服务器地址。
+  - 支持通过开关启用/禁用连接断开后的自动重连功能。
+  - 提供优雅的开启/关闭服务流程，方便用户完全控制代理的生命周期。
+- **完善的状态监控与调试**:
+  - 主界面通过图标和颜色实时显示 **无障碍服务** 和 **后台连接** 的状态。
+  - 内置 **实时日志中心** 标签页，在手机端即可追踪所有接收到的指令和关键执行日志，极大方便了移动调试。
+  - 内置 **设备信息** 标签页，快速查看本机IP地址、设备型号、安卓版本等关键信息。
+- **服务持久化**: 采用前台服务 (`ForegroundService`) 保证代理在后台稳定运行，并通过常驻通知栏清晰展示服务状态。
+
+
 
 ## 技术栈
 
-* **语言**: Kotlin
-* **核心 API**:
-    * `AccessibilityService`: 用于UI自动化操作。
-    * `MediaProjection` API: 用于屏幕内容获取。
-    * `ForegroundService`: 保证截图服务在后台稳定运行。
-* **构建系统**: Gradle
+- **语言**: Kotlin
+- **核心 API**:
+  - `AccessibilityService`: 用于UI自动化操作。
+  - `MediaProjection` API: 用于屏幕内容获取。
+  - `ForegroundService`: 保证服务在后台稳定运行。
+- **网络通信**: OkHttp (WebSocket)
+- **数据持久化**: SharedPreferences
+- **UI**: Material Design 3, ViewPager2, TabLayout, Vector Drawable
+- **应用内通信**: LocalBroadcastManager
+- **构建系统**: Gradle
 
-## 环境要求
 
-* **Android Studio 版本：** 2025.1.1（本人使用）
-* **最低 SDK (`minSdk`)：** 24 (Android 7.0)
-* **目标 SDK (`targetSdk`)：** 36
-* **主要测试环境：** 安卓模拟器 - Pixel 7 (API 36)
 
-## 测试步骤
+## 快速开始
 
-### 1. 环境准备
+### 1. 环境要求
 
+- **Android Studio 版本：** Hedgehog | 2023.1.1 或更高版本
+- **最低 SDK (`minSdk`)：** 24 (Android 7.0)
+- **目标 SDK (`targetSdk`)：** 34 (Android 14)
 - **网络环境**: 您的电脑（运行后端服务）和安卓测试设备必须连接到 **同一个局域网 (Wi-Fi)** 下。
+
+
 
 ### 2. 关键配置
 
-在运行App前，**必须**配置正确的后端WebSocket地址，否则App将无法连接到后端服务。
+推荐使用App内置的UI进行配置，这比在代码中硬编码更灵活。
 
-1.  在 Android Studio 中，找到并打开以下文件：
-    `app/src/main/java/com/example/taskifyapp/WebSocketService.kt`
+1. 启动App，切换到 **【高级设置】** 标签页。
+2. 在“服务器地址”输入框中，填入您后端服务的WebSocket地址 (例如: `ws://<你的电脑IP地址>:8080/agent-ws`)。
+3. 点击 **【保存】**。
 
-2.  修改文件顶部的 `WEBSOCKET_URL` 常量，将其中的IP地址替换为您**正在运行后端服务的电脑的局域网IP地址**。
+**如何查找电脑IP地址？**
 
-    ```kotlin
-    // ...
-    class WebSocketService : Service() {
-    
-        private val TAG = "WebSocketService"
-        // !!!重要!!! 请将这里替换为您的后端服务器地址
-        private val WEBSOCKET_URL = "ws://<你的电脑IP地址>:8080/agent-ws"
-    
-        // ...
-    }
-    ```
+* **Windows**: 打开CMD（命令提示符），输入 `ipconfig`，查找“无线局域网适配器”下的“IPv4 地址”。
+* **macOS**: 打开“系统设置” -> “网络” -> “Wi-Fi”，可以看到IP地址；或在终端输入 `ifconfig | grep "inet "`。
 
-    * **如何查找电脑IP地址？**
-        * **Windows**: 打开CMD（命令提示符），输入 `ipconfig`，查找“无线局域网适配器”下的“IPv4 地址”。
-        * **macOS**: 打开“系统设置” -> “网络” -> “Wi-Fi”，可以看到IP地址；或在终端输入 `ifconfig | grep "inet "`。
+
 
 ### 3. 构建与运行
 
-1.  使用 Android Studio 打开本安卓项目。
-2.  等待 Gradle 完成项目同步和构建（通常会自动进行）。
-3.  连接您的安卓设备或启动安卓模拟器。
-4.  点击菜单栏的 **"Run" -> "Run 'app'"** (或使用快捷键 `Shift+F10`) 来安装并运行App。
+1. 使用 Android Studio 打开本安卓项目。
+2. 等待 Gradle 完成项目同步和构建。
+3. 连接您的安卓设备或启动安卓模拟器。
+4. 点击菜单栏的 **"Run" -> "Run 'app'"** (或使用快捷键 `Shift+F10`) 来安装并运行App。
+
+
 
 ### 4. 使用与测试流程
 
-为了让安卓端进入“待命”状态以配合后端测试，请在App内完成以下初始化步骤：
+为了让安卓端进入“待命”状态，请在App内完成以下初始化步骤：
 
-1.  **开启无障碍服务**:
-    App启动后会显示主界面。请首先点击 **【1. 开启无障碍服务】** 按钮，系统会跳转到设置页面。在列表中找到“Taskify 自动化服务”并开启它。
+1. **开启无障碍服务**: 点击 **【1. 开启无障碍服务】** 按钮，系统会跳转到设置页面。在列表中找到“Taskify 自动化服务”并开启它。返回App后，您会看到该项状态变为绿色的“已开启”。
+2. **启动后台服务并授权**: 点击 **【2. 启动后台服务】** 按钮。系统会弹出“屏幕录制”的授权请求，请点击“立即开始”或“同意”。
+3. **验证服务状态**: 授权成功后，App会自动连接您配置的后端地址。主界面的 **“后台连接服务”** 状态应变为绿色的“已连接”。这表示安卓端已准备就绪。
+4. **配合后端测试**: 此时，您可以开始通过后端下发指令。所有接收到的指令和执行结果，都会实时显示在App的 **【实时日志】** 标签页中，方便您进行调试。
+5. **关闭服务**: 当服务运行时，主界面的按钮会自动变为“关闭”功能。您可以随时点击 **【关闭后台服务】** 或 **【关闭无障碍服务】** 来停止代理。
 
-2.  **启动后台服务并授权**:
-    返回App后，点击 **【2. 启动后台服务并授权】** 按钮。系统会弹出“屏幕录制”的授权请求，请点击“立即开始”或“同意”。
 
-3.  **验证服务状态**:
-    授权成功后，App会自动在后台以“前台服务”的形式运行。您可以在手机顶部的通知栏看到一个“TaskifyToolkit 后台服务”的常驻通知，这表示安卓端已准备就绪，正在等待后端的指令。
 
-4.  **配合后端测试**:
-    此时，安卓端已进入待命状态。后端开发同学可以通过调用 `POST /api/v1/agent/start` 接口来触发任务。您可以在 Android Studio 的 **Logcat** 窗口中，筛选 `WebSocketService` 来观察安卓端接收和执行指令的日志。
+## 指令集示例 (JSON)
+
+所有支持的指令都以 `actionType` 字段来区分，以下的推荐格式都存放在 `\app\src\main\assets` 。
+
+点击 (CLICK)
+
+```json
+{
+  "actionType": "CLICK",
+  "targetText": "登录"
+}
+```
+
+输入文本 (INPUT_TEXT)
+
+```json
+{
+  "actionType": "INPUT_TEXT",
+  "targetText": "请输入用户名",
+  "textToInput": "my_username"
+}
+```
+
+长按 (LONG_CLICK)
+
+```json
+{
+  "actionType": "LONG_CLICK",
+  "targetText": "复制"
+}
+```
+
+滑动 (SWIPE)
+
+```json
+{
+  "actionType": "SWIPE",
+  "startX": 540,
+  "startY": 1800,
+  "endX": 540,
+  "endY": 600,
+  "duration": 400
+}
+```
+
+滚动 (SCROLL)
+
+```json
+{
+  "actionType": "SCROLL",
+  "targetText": "消息列表",
+  "direction": "FORWARD"
+}
+```
+
+捕获并上报 (CAPTURE_AND_REPORT)
+
+```json
+{
+  "actionType": "CAPTURE_AND_REPORT"
+}
+```
+
+
 
 ## 未来工作
 
-* [ ] 与后端同学配合，接收和解析来自后端的指令。
-* [ ] 开发更丰富的UI元素定位和操作序列功能。
-* [ ] 完善服务的稳定性和错误处理机制。
-* [ ] 将测试范围扩大到物理安卓设备。
+- [ ] 完善指令执行后的结果反馈机制，将成功或失败的状态回传给后端。
+
+- [ ] 开发更丰富的UI元素定位方式（如通过resource-id, XPath）。
+
+- [ ] 优化服务的稳定性和内存占用。
+
+- [ ] 将测试范围扩大到更多不同品牌和安卓版本的物理设备。
