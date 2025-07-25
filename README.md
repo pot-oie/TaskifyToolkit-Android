@@ -2,7 +2,7 @@
 
 **TaskifyToolkit** 是一个功能完备的安卓设备端智能代理，它利用安卓系统的 **无障碍服务 (Accessibility Service)** 和 **MediaProjection API**，实现对手机UI界面的深度感知与精准的远程自动化操作。
 
-<img src="D:\code\Github\TaskifyToolkit\pic\image-1.png" alt="image-20250725161724698" style="zoom: 24%;" /><img src="D:\code\Github\TaskifyToolkit\pic\image-2.png" alt="image-20250725161940432" style="zoom:24%;" /><img src="D:\code\Github\TaskifyToolkit\pic\image-3.png" alt="image-20250725162036325" style="zoom:24%;" />
+<img src="./images/log_center.png" alt="image-20250725161724698" style="zoom: 24%;" /><img src="./images/settings_page.png" alt="image-20250725161940432" style="zoom:24%;" /><img src="./images/info_page.png" alt="image-20250725162036325" style="zoom:24%;" />
 
 
 
