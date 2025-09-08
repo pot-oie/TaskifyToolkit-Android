@@ -1,48 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="服务器地址"
-        android:textColor="#4A5568"
-        android:textSize="18sp" android:textStyle="bold"/>
-
-    <EditText
-        android:id="@+id/server_url_edit_text"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="例如: ws://192.168.1.10:8080"
-        android:inputType="textUri"
-        android:textSize="16sp" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <Button
-        android:id="@+id/save_url_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:layout_marginTop="8dp"
-        android:text="保存"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="当前服务器地址"
+            android:textColor="#4A5568"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="24dp"
-        android:background="#E2E8F0"/>
+        <TextView
+            android:id="@+id/current_server_ip_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/log_background"
+            android:padding="12dp"
+            android:text="未设置"
+            android:textColor="@android:color/white"
+            android:textIsSelectable="true"
+            android:textSize="16sp" />
 
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/auto_reconnect_switch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="断开后自动重连"
-        android:textColor="#2D3748"
-        android:textSize="18sp" android:checked="true"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="修改服务器地址"
+            android:textColor="#4A5568"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-</LinearLayout>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/server_ip_input_layout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:endIconMode="clear_text"
+            app:helperText="请在此处输入电脑的IP地址">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/server_ip_edit_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:digits="0123456789."
+                android:enabled="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:hint="电脑IP地址"
+                android:imeOptions="actionDone"
+                android:inputType="numberDecimal|number"
+                android:longClickable="true"
+                android:singleLine="true"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/save_url_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp"
+            android:text="保存" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:background="#E2E8F0" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/auto_reconnect_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="断开后自动重连"
+            android:textColor="#2D3748"
+            android:textSize="18sp" />
+
+    </LinearLayout>
+</ScrollView>

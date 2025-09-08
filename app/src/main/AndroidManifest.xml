@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
+        android:name=".TaskifyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -21,17 +22,27 @@
         android:theme="@style/Theme.TaskifyToolkit"
         android:usesCleartextTraffic="true">
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
+            android:name=".ui.main.MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize|stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- 无障碍服务的注册 -->
+        <activity
+            android:name=".ui.dialog.CompletionDialogActivity"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:theme="@style/Theme.TaskifyToolkit.DialogActivity"/>
+        <activity
+            android:name=".ui.main.KeepAliveGuideActivity"
+            android:label="后台运行设置指南"
+            android:parentActivityName=".ui.main.MainActivity" />
+        <!-- 注册无障碍服务 -->
         <service
-            android:name=".TaskifyAccessibilityService"
+            android:name=".service.TaskifyAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:label="Taskify 自动化服务"
             android:exported="false">
@@ -42,10 +53,9 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
-
         <!-- 注册 WebSocketService -->
         <service
-            android:name=".WebSocketService"
+            android:name=".service.WebSocketService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
