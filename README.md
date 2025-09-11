@@ -1,10 +1,6 @@
-# TaskifyToolkit \- 一次AI驱动的安卓深度探索
+# TaskifyToolkit
 
-> 这是一个出于对 AI Agent 和安卓底层技术的好奇而开发的实践项目。
->
 > **TaskifyToolkit** 是一个功能完备的安卓设备端智能代理，它利用安卓系统的 **无障碍服务 (Accessibility Service)** 和 **Media Projection API**，实现对手机UI界面的深度感知与精准的远程自动化操作。
->
-> 这个项目是我与 Gemini 紧密协作的产物。从**架构设计、代码重构到攻克顽固的系统级Bug**，这段经历让我深刻体验下一代软件开发的全新范式。
 
 <img src="./images/log_center.png" width="32%"><img src="./images/settings_page.png" width="32%"><img src="./images/info_page.png" width="32%">
 
@@ -16,12 +12,11 @@
 
 
 
-## 项目亮点（个人总结）
+## 项目亮点（总结）
 
 - **现代安卓架构设计与重构**
   - 将功能耦合的初始版本，重构为符合业界标准的 **MVVM + Repository + Service** 的清晰分层架构。
   - 一定程度上理解“单一职责”和“关注点分离”原则，初步具备将复杂业务逻辑解耦、提升代码可维护性和可扩展性的能力。
-
 - **安卓底层API的深入应用与调试**
   - 深度使用 `AccessibilityService` 和 `MediaProjection` 核心API，实现对第三方App的UI元素解析和屏幕内容获取。
 - **复杂的并发与异步编程**
